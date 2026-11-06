@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Map Lab · Demo</title>
+<style>
+:root{--bg:#050607;--ink:#F4F6F8;--muted:#8B9099;--dim:#5A5F68;--line:rgba(255,255,255,.08);--teal:#2BE0C9;--teal-bg:rgba(43,224,201,.10);
+  --font:"TikTok Sans","Inter",-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);overflow:hidden}
+body{font-family:var(--font);color:var(--ink);-webkit-font-smoothing:antialiased}
+#fit{position:relative;width:100vw;height:100vh;overflow:hidden}
+#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;background:var(--bg);overflow:hidden}
+.dots{position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.07) 1.2px,transparent 1.3px);background-size:28px 28px;
+  -webkit-mask-image:radial-gradient(ellipse 90% 80% at 60% 50%,#000 40%,transparent 100%);mask-image:radial-gradient(ellipse 90% 80% at 60% 50%,#000 40%,transparent 100%)}
+.glow{position:absolute;width:1100px;height:700px;right:-250px;bottom:-380px;background:radial-gradient(closest-side,rgba(43,224,201,.16),transparent);filter:blur(10px)}
+.glow.b{left:-300px;top:-380px;right:auto;bottom:auto;background:radial-gradient(closest-side,rgba(42,62,244,.18),transparent)}
+.brand{position:absolute;left:96px;top:64px;display:flex;align-items:center;gap:14px;font-size:30px;font-weight:700;transition:opacity .6s}
+.brand i{display:grid;grid-template-columns:1fr 1fr;gap:4px;width:30px;height:30px}
+.brand i b{border:3px solid #5B5BF6;border-radius:3px}
+.brand em{font-style:normal;font-size:15px;font-weight:600;color:var(--teal);border:1.5px solid rgba(43,224,201,.45);border-radius:6px;padding:3px 8px;letter-spacing:.06em}
+#left{position:absolute;left:96px;top:184px;width:420px;transition:opacity .6s}
+.kicker{font-size:14px;font-weight:600;letter-spacing:.16em;color:var(--teal)}
+.h1{font-size:46px;line-height:1.22;font-weight:700;margin:16px 0 0}
+.chs{margin-top:52px;display:flex;flex-direction:column}
+.ch{all:unset;cursor:pointer;display:grid;grid-template-columns:50px 1fr;padding:18px 0;border-top:1px solid var(--line);color:var(--dim);transition:color .3s}
+.ch:last-child{border-bottom:1px solid var(--line)}
+.ch:hover{color:var(--muted)}
+.ch .n{font-size:20px;font-weight:600;line-height:34px}
+.ch .t{font-size:27px;font-weight:700;line-height:34px}
+.ch .s{font-size:15px;color:var(--dim);margin-top:4px}
+.ch .detail{display:none}
+.ch.on{color:var(--ink)} .ch.on .n{color:var(--teal)} .ch.on .s{display:none}
+.ch.on .detail{display:block;margin-top:14px;animation:fadeUp .45s ease both}
+.detail .eb{font-size:13px;font-weight:600;letter-spacing:.14em;color:var(--teal);text-transform:uppercase}
+.detail .nm{font-size:24px;font-weight:700;margin-top:6px;color:var(--ink)}
+.detail .ds{font-size:18px;line-height:1.6;color:var(--muted);margin-top:8px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#win{position:absolute;left:576px;top:124px;width:1248px;height:830px;border-radius:16px;background:#0A0E13;border:1px solid rgba(255,255,255,.1);
+  box-shadow:0 40px 120px rgba(0,0,0,.6);overflow:hidden;transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+.bar{height:44px;display:flex;align-items:center;gap:8px;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.06);background:#0E1013}
+.bar i{width:12px;height:12px;border-radius:50%}
+.bar i:nth-child(1){background:#FF5F57}.bar i:nth-child(2){background:#FEBC2E}.bar i:nth-child(3){background:#28C840}
+.url{margin:0 auto;transform:translateX(-30px);font-size:14px;color:#80858E;background:#1A1D22;border-radius:7px;padding:5px 60px}
+#view{position:relative;width:1248px;height:786px;overflow:hidden}
+#frame{position:absolute;left:0;top:0;width:1440px;height:907px;border:0;transform:scale(.86667);transform-origin:0 0;pointer-events:none;background:#0A0E13}
+#view.free #frame{pointer-events:auto}
+#cur{position:absolute;left:0;top:0;z-index:5;opacity:0;transition:opacity .3s;pointer-events:none}
+#cur svg{display:block;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));transition:transform .12s}
+#cur .wheel{position:absolute;left:22px;top:22px;font:600 12px/1 var(--font);color:#fff;background:rgba(10,14,19,.82);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:5px 9px;white-space:nowrap;opacity:0;transition:opacity .2s}
+#cur.zooming .wheel{opacity:1}
+.rip{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;border:2px solid #2A3EF4;animation:rip .5s ease-out forwards;z-index:4;pointer-events:none}
+@keyframes rip{from{transform:scale(.3);opacity:1}to{transform:scale(1.4);opacity:0}}
+#veil{position:absolute;inset:0;background:#0A0E13;z-index:3;opacity:1;transition:opacity .4s;pointer-events:none;display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:16px}
+#veil.off{opacity:0}
+.full{position:absolute;inset:0;z-index:60;display:flex;flex-direction:column;justify-content:center;align-items:center;background:var(--bg);opacity:0;pointer-events:none;transition:opacity .6s}
+.full.on{opacity:1}
+.mq{white-space:nowrap;font-size:150px;font-weight:800;letter-spacing:-.03em;line-height:1;width:100%;overflow:hidden}
+.mq span{display:inline-block;padding-right:60px}
+.mq.o{color:transparent;-webkit-text-stroke:2px rgba(91,91,246,.55)} .mq.f{color:#5B5BF6}
+.mq .track{display:inline-block;will-change:transform}
+.mid{font-size:54px;font-weight:600;margin:34px 0} .mid em{font-style:normal;color:var(--teal);margin:0 18px}
+.outro .big{font-size:120px;font-weight:800;letter-spacing:-.03em;display:flex;align-items:center;gap:28px}
+.outro .big i{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:88px;height:88px}
+.outro .big i b{border:8px solid #5B5BF6;border-radius:8px}
+.outro p{font-size:32px;color:var(--muted);margin:28px 0 0}
+.outro code{margin-top:34px;font:500 22px var(--font);color:var(--teal);border:1px solid rgba(43,224,201,.35);border-radius:999px;padding:10px 24px}
+#ctl{position:absolute;left:576px;top:984px;width:1248px;display:flex;align-items:center;gap:18px;transition:opacity .6s}
+#pp{all:unset;cursor:pointer;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex:none}
+#pp:hover{background:rgba(255,255,255,.08)}
+#segs{flex:1;display:flex;gap:6px}
+.seg{all:unset;cursor:pointer;flex:1;height:22px;display:flex;align-items:center}
+.seg i{display:block;width:100%;height:3px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden}
+.seg i b{display:block;height:100%;width:0;background:var(--teal)}
+.seg.done i b{width:100%;background:rgba(43,224,201,.45)}
+.seg.gap{margin-left:14px}
+#ctl .cap{font-size:15px;color:var(--dim);min-width:170px;text-align:right}
+/* 全屏模式：只保留网页画面 */
+#left,#brand,.bar,#ctl{display:none!important}
+#win{left:0!important;top:0!important;width:1920px!important;height:1080px!important;border-radius:0!important;border:0!important}
+#view{width:1920px!important;height:1080px!important}
+#cam{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;will-change:transform}
+#frame{width:1600px!important;height:900px!important;transform:scale(1.2)!important}
+</style>
+</head>
+<body>
+<div id="fit"><div id="stage">
+  <div class="dots"></div><div class="glow"></div><div class="glow b"></div>
+  <div class="brand" id="brand"><i><b></b><b></b><b></b><b></b></i>Map Lab<em>SKILL</em></div>
+  <div id="left">
+    <div class="kicker">MAP LAB · LOGISTICS SPATIAL SYSTEM</div>
+    <div class="h1">为全球物流业务构建<br>一致的地图体验</div>
+    <div class="chs" id="chs"></div>
+  </div>
+  <div id="win">
+    <div class="bar"><i></i><i></i><i></i><span class="url">egooole.github.io/map-explore/showcase</span></div>
+    <div id="view">
+      <div id="cam"><iframe id="frame" src="about:blank" title="Map Lab Showcase" tabindex="-1"></iframe>
+      <div id="veil">正在加载 Map Lab…</div>
+      <div id="cur"><svg width="26" height="30" viewBox="0 0 26 30"><path d="M3 2 L3 24 L9 18.5 L13 27 L17 25.2 L13 16.8 L21 16.8 Z" fill="#111" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg><span class="wheel">滚轮缩放</span></div></div>
+    </div>
+  </div>
+  <div id="ctl"><button id="pp" aria-label="暂停"></button><div id="segs"></div><div class="cap" id="cap"></div></div>
+  <div class="full" id="intro">
+    <div class="mq o"><span class="track" id="mq1"></span></div>
+    <div class="mid">»<em>Map Lab Components SKILL</em>«</div>
+    <div class="mq f"><span class="track" id="mq2"></span></div>
+  </div>
+  <div class="full outro" id="outro">
+    <div class="big"><i><b></b><b></b><b></b><b></b></i>Map Lab</div>
+    <p>一种空间语言，让每个物流产品的地图保持一致</p>
+    <code>egooole.github.io/map-explore</code>
+  </div>
+</div></div>
+<script>
+/*
+ * Map Lab 汇报 demo：右侧窗口里是真实的 /showcase 页面（同源 iframe），
+ * 这里的脚本只负责“导演”——滚动、移动光标、点击真实按钮、缩放真实地图，
+ * 所有地图、组件与面板都来自 showcase 本身的代码。
+ */
+const $=s=>document.querySelector(s);
+const F=$("#frame");
+const scaleOf=()=>{const m=getComputedStyle(F).transform.match(/matrix\(([^,]+)/);return m?parseFloat(m[1]):1};
+const W=()=>F.contentWindow,D=()=>F.contentDocument;
+const qa=(s,root)=>[...(root||D()).querySelectorAll(s)];
+const q=(s,root)=>(root||D()).querySelector(s);
+
+function fit(){const f=$("#fit"),s=Math.min(f.clientWidth/1920,f.clientHeight/1080);
+  $("#stage").style.transform=`translate(${(f.clientWidth-1920*s)/2}px,${(f.clientHeight-1080*s)/2}px) scale(${s})`}
+addEventListener("resize",fit);fit();
+
+/* ---------- pausable timeline ---------- */
+let paused=false,token=0,elapsed=0,visible=false,started=false;const ABORT={};
+// requestAnimationFrame 在后台标签页会暂停，用定时器兜底，保证时间线继续
+const raf=()=>new Promise(r=>{let done=false;const f=()=>{if(!done){done=true;r()}};requestAnimationFrame(f);setTimeout(f,40)});
+async function wait(ms){const my=token;let last=performance.now(),t=0;
+  while(t<ms){await raf();if(my!==token)throw ABORT;const now=performance.now(),dt=Math.min(now-last,80);last=now;if(!paused&&visible){t+=dt;elapsed+=dt}}}
+const easeIO=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2,lin=t=>t;
+async function tween(ms,f,ease=easeIO){const my=token;let last=performance.now(),t=0;f(0);
+  while(t<ms){await raf();if(my!==token)throw ABORT;const now=performance.now(),dt=Math.min(now-last,80);last=now;if(!paused&&visible){t+=dt;elapsed+=dt}f(ease(Math.min(t/ms,1)))}}
+async function waitFor(fn,ms=8000){const t0=performance.now();while(performance.now()-t0<ms){let v;try{v=fn()}catch(e){}if(v)return v;await wait(100)}return null}
+
+/* ---------- inside the showcase ---------- */
+function prepFrame(){const d=D();if(!d||d.getElementById("demo-style"))return;
+  // 把 showcase 里所有 :hover 规则镜像成 .is-demo-hover，让脚本能呈现真实的 hover 样式
+  let css="html,body{scrollbar-width:none;scroll-behavior:auto!important}body::-webkit-scrollbar{display:none}\n";
+  const walk=rs=>{for(const r of rs){if(r.cssRules&&!r.selectorText){try{walk(r.cssRules)}catch(e){}continue}
+    if(r.selectorText&&r.selectorText.includes(":hover"))css+=r.selectorText.replace(/:hover/g,".is-demo-hover")+"{"+r.style.cssText+"}\n"}};
+  for(const ss of d.styleSheets){try{walk(ss.cssRules)}catch(e){}}
+  const st=d.createElement("style");st.id="demo-style";st.textContent=css;d.head.appendChild(st)}
+function hookMaps(){const g=W()?.google;if(!g?.maps?.Map||g.maps.Map.__demoHooked)return;
+  const reg=W().__demoMaps=W().__demoMaps||new Set();const P=g.maps.Map.prototype;
+  for(const m of ["fitBounds","setZoom","setCenter","setOptions","panTo","moveCamera","panToBounds"]){const o=P[m];if(typeof o!=="function")continue;
+    P[m]=function(...a){reg.add(this);return o.apply(this,a)}}
+  g.maps.Map.__demoHooked=true}
+function scroller(){const d=D(),b=d.body;return (b.scrollHeight>b.clientHeight+4&&getComputedStyle(b).overflowY!=="visible")?b:d.scrollingElement}
+function mapIn(root){const mk=q("gmp-advanced-marker",root);if(mk?.map)return mk.map;
+  for(const m of (W().__demoMaps||[])){try{if(root.contains(m.getDiv()))return m}catch(e){}}return null}
+function proj(map){if(map.__demoOv)return map.__demoOv;const g=W().google;const o=new g.maps.OverlayView();o.onAdd=()=>{};o.draw=()=>{};o.onRemove=()=>{};o.setMap(map);map.__demoOv=o;return o}
+async function px(map,lat,lng){const o=proj(map);const p=await waitFor(()=>o.getProjection()?.fromLatLngToContainerPixel(new (W().google.maps.LatLng)(lat,lng)),3000);
+  const r=map.getDiv().getBoundingClientRect();return [r.left+p.x,r.top+p.y]}
+const ctr=el=>{const r=el.getBoundingClientRect();return [r.left+r.width/2,r.top+r.height/2]};
+
+/* ---------- cursor & input ---------- */
+const CUR=$("#cur");let cx=900,cy=900;
+const toStage=(x,y)=>{const k=scaleOf();return [x*k,y*k]};
+function setCur(x,y){cx=x;cy=y;const [a,b]=toStage(x,y);CUR.style.transform=`translate(${a}px,${b}px)`}
+async function curTo(t,ms=750){const [x,y]=Array.isArray(t)?t:ctr(t);const x0=cx,y0=cy;CUR.style.opacity=1;await tween(ms,k=>setCur(x0+(x-x0)*k,y0+(y-y0)*k))}
+async function ripple(){const r=document.createElement("div");r.className="rip";const [a,b]=toStage(cx,cy);r.style.left=a+3+"px";r.style.top=b+2+"px";$("#cam").appendChild(r);
+  CUR.firstElementChild.style.transform="scale(.88)";await wait(140);CUR.firstElementChild.style.transform="";setTimeout(()=>r.remove(),700)}
+function fire(el,type,x=cx,y=cy,extra={}){const E=type.startsWith("pointer")?W().PointerEvent:W().MouseEvent;
+  el.dispatchEvent(new E(type,Object.assign({bubbles:!/enter|leave/.test(type),cancelable:true,clientX:x,clientY:y,pointerType:"mouse",isPrimary:true,view:W()},extra)))}
+let hovered=[];
+function unhover(){for(const el of hovered){el.classList.remove("is-demo-hover");fire(el,"mouseleave");fire(el,"mouseout");fire(el,"pointerleave")}hovered=[]}
+function hover(el){unhover();el.classList.add("is-demo-hover");fire(el,"pointerenter");fire(el,"mouseenter");fire(el,"mouseover");fire(el,"pointermove");hovered=[el]}
+/* 点击时镜头推近到点击位置，停留后拉回 */
+const CAM=$("#cam");let camZ=1,camX=0,camY=0;
+function camSet(z,x,y){camZ=z;camX=x;camY=y;CAM.style.transform=`translate(${x}px,${y}px) scale(${z})`}
+async function camTo(z,px,py,ms=550){const [vx,vy]=toStage(px,py);let tx=vx*(1-z),ty=vy*(1-z);tx=Math.min(0,Math.max(1920*(1-z),tx));ty=Math.min(0,Math.max(1080*(1-z),ty));
+  const z0=camZ,x0=camX,y0=camY;await tween(ms,k=>camSet(z0+(z-z0)*k,x0+(tx-x0)*k,y0+(ty-y0)*k))}
+async function focusClick(act){await camTo(1.6,cx,cy);await ripple();act();await wait(900);await camTo(1,cx,cy)}
+async function click(el){await focusClick(()=>el.click())}
+function mapMove(x,y){const t=D().elementFromPoint(x,y);if(!t)return;for(const ty of ["pointerover","pointerenter","mouseover","pointermove","mousemove"])fire(t,ty,x,y);
+  D().dispatchEvent(new (W().PointerEvent)("pointermove",{bubbles:true,clientX:x,clientY:y,pointerType:"mouse"}))}
+async function mapClick(x,y){await focusClick(()=>{const t=D().elementFromPoint(x,y);if(!t)return;
+  for(const ty of ["pointerdown","mousedown","pointerup","mouseup","click"])fire(t,ty,x,y,{button:0,buttons:ty.includes("down")?1:0})})}
+async function hoverMapTo(x,y,ms=700){const x0=cx,y0=cy;CUR.style.opacity=1;await tween(ms,k=>{setCur(x0+(x-x0)*k,y0+(y-y0)*k);mapMove(cx,cy)})}
+async function zoomMap(map,z1,c1,ms){const z0=map.getZoom(),c=map.getCenter(),a=c.lat(),b=c.lng();CUR.classList.add("zooming");
+  await tween(ms,k=>map.moveCamera({zoom:z0+(z1-z0)*k,center:{lat:a+(c1.lat-a)*k,lng:b+(c1.lng-b)*k}}));CUR.classList.remove("zooming")}
+async function scrollTo(sel,ms=1100,off=28){const el=await waitFor(()=>q(sel));if(!el)return;const sc=scroller();const y0=sc.scrollTop,y1=el.getBoundingClientRect().top+y0-off;
+  if(Math.abs(y1-y0)<4)return;await tween(ms,k=>sc.scrollTop=y0+(y1-y0)*k)}
+function jumpTo(sel,off=28){const el=q(sel);if(!el)return;const sc=scroller();sc.scrollTop=el.getBoundingClientRect().top+sc.scrollTop-off}
+const byText=(sel,txt)=>qa(sel).find(e=>e.textContent.trim().includes(txt));
+
+/* ---------- showcase helpers ---------- */
+const COMP="#components",CASE="#use-cases";
+async function component(tab,item){const tabs=await waitFor(()=>qa(".HomeComponentTabs button").length&&qa(".HomeComponentTabs button"));if(!tabs)return;
+  if(!tabs[tab].classList.contains("is-active")){await curTo(tabs[tab],650);await click(tabs[tab]);await wait(350)}
+  const list=qa(".HomeComponentList button");if(!list[item].classList.contains("is-active")){await curTo(list[item],650);await click(list[item])}
+  await wait(900)}
+const compMapRoot=()=>q(".HomeMap--component");
+const markers=root=>qa("gmp-advanced-marker .MapMarker",root);
+async function caseTab(i){const tabs=await waitFor(()=>qa(".HomeCaseTabs button").length&&qa(".HomeCaseTabs button"));if(!tabs)return;if(!tabs[i].classList.contains("is-active")){await curTo(tabs[i],700);await click(tabs[i])}await wait(1200)}
+const caseRoot=()=>q(".HomeCaseMap");
+
+/* ---------- script ---------- */
+const CH=[{n:"01",t:"可组合的地图组件",s:"Location · Route · Area"},{n:"02",t:"进入真实物流产品",s:"4 个物流业务场景"},{n:"03",t:"即刻开启",s:"设计规范 · AI 开发资源"}];
+const STEPS=[
+{ch:-1,cap:"开场",dur:3800,run:async()=>{
+  ["#left","#ctl","#brand"].forEach(s=>$(s).style.opacity=0);$("#win").style.opacity=0;$("#win").style.transform="translateY(90px) scale(.94)";
+  $("#intro").classList.add("on");
+  await tween(2700,t=>{$("#mq1").style.transform=`translateX(${-200-420*t}px)`;$("#mq2").style.transform=`translateX(${-900+420*t}px)`},lin);
+  await waitFor(()=>D()?.querySelector(COMP),6000);prepFrame();jumpTo(COMP);
+  $("#intro").classList.remove("on");await wait(250);$("#win").style.opacity=1;$("#win").style.transform="none";await wait(350);
+  ["#left","#ctl","#brand"].forEach(s=>$(s).style.opacity=1)}},
+{ch:0,eb:"Location",nm:"Normal Location",ds:"统一的默认、Hover、Selected 状态，用一个点表达位置与密度。",dur:5200,run:async()=>{
+  await scrollTo(COMP);await component(0,0);const ms=await waitFor(()=>markers(compMapRoot()).length>=6&&markers(compMapRoot()));
+  await curTo(ms[3],800);hover(ms[3]);await wait(800);await click(ms[3]);await wait(700);
+  await curTo(ms[6],700);hover(ms[6]);await wait(900);unhover()}},
+{ch:0,eb:"Location",nm:"Informated Location",ds:"带业务图标的信息型定位点，仓库、站点等对象一眼可辨。",dur:4600,run:async()=>{
+  await component(0,1);const ms=await waitFor(()=>markers(compMapRoot()).length>=6&&markers(compMapRoot()));
+  await curTo(ms[2],800);hover(ms[2]);await wait(800);await click(ms[2]);await wait(1100);unhover()}},
+{ch:0,eb:"Location",nm:"Cumulative Location",ds:"随地图缩放层级自动聚合与拆分，大量点位也保持清晰。",dur:8000,run:async()=>{
+  await component(0,2);const root=compMapRoot();await waitFor(()=>markers(root).length>=3);const map=await waitFor(()=>mapIn(root));if(!map)return;
+  const r=root.getBoundingClientRect();await curTo([r.left+r.width*.6,r.top+r.height*.48],700);await wait(500);
+  // 只改变地图缩放层级，聚合与拆分完全由 Map Lab 的 Cumulative Location 逻辑完成
+  for(const [z,c] of [[5,{lat:34,lng:117}],[6,{lat:32.5,lng:119}],[7,{lat:31.8,lng:120}]]){await zoomMap(map,z,c,1500);await wait(800)}
+  await wait(500)}},
+{ch:0,eb:"Location",nm:"Custom Location",ds:"承载字母、数字或业务图标的可扩展位置容器。",dur:4200,run:async()=>{
+  await component(0,3);const ms=await waitFor(()=>markers(compMapRoot()).length>=5&&markers(compMapRoot()));
+  await curTo(ms[1],800);hover(ms[1]);await wait(900);await curTo(ms[4],600);hover(ms[4]);await wait(800);unhover()}},
+{ch:0,eb:"Route",nm:"Normal Route · Directional Route",ds:"基础路线表达计划与轨迹；方向箭头按屏幕像素等距排布，说明移动方向。",dur:6200,run:async()=>{
+  await component(1,0);await wait(900);await component(1,1);
+  const hit=await waitFor(()=>q(".MapRouteOverlay__hitArea",compMapRoot()));
+  if(hit&&hit.getTotalLength){const p=hit.getPointAtLength(hit.getTotalLength()*.55).matrixTransform(hit.getScreenCTM());await hoverMapTo(p.x,p.y,900);await wait(900);await mapClick(p.x,p.y);await wait(1000)}}},
+{ch:0,eb:"Route",nm:"Route with endpoints",ds:"路线与起终点组合，任务关系在地图中一眼可见。",dur:4200,run:async()=>{
+  await component(1,2);const ms=await waitFor(()=>markers(compMapRoot()).length>=2&&markers(compMapRoot()));
+  await curTo(ms.at(-1),800);hover(ms.at(-1));await wait(1100);unhover()}},
+{ch:0,eb:"Route",nm:"Progress Route",ds:"区分已完成和剩余路段，并标记实时任务位置。",dur:4400,run:async()=>{
+  await component(1,3);const pin=await waitFor(()=>q(".MapRouteOverlay__progressTrigger",compMapRoot())||q(".MapRouteOverlay__progressPin",compMapRoot()));
+  if(pin){await curTo(pin,900);hover(pin);await wait(1300);unhover()}}},
+{ch:0,eb:"Area",nm:"Area Selection",ds:"高亮单个服务或运营区域，Hover 与 Selected 给出状态反馈。",dur:4600,run:async()=>{
+  await component(2,0);const root=compMapRoot();await wait(1200);const r=root.getBoundingClientRect();const p=[r.left+r.width*.5+12,r.top+r.height*.5+8];
+  await hoverMapTo(p[0],p[1],900);await wait(500);await mapClick(p[0],p[1]);await wait(1400)}},
+{ch:0,eb:"Area",nm:"Multiple Areas",ds:"同时比较多个区域的覆盖范围和空间关系。",dur:4600,run:async()=>{
+  await component(2,1);const root=compMapRoot();await wait(1500);const map=await waitFor(()=>mapIn(root),3000);
+  if(map){for(const [la,ln] of [[31.2,121.45],[40.1,116.4]]){const p=await px(map,la,ln);await hoverMapTo(p[0],p[1],800);await mapClick(p[0],p[1]);await wait(700)}}
+  await wait(600)}},
+{ch:1,eb:"Case 01",nm:"设施覆盖查询",ds:"全国逐级下钻到上海，再按设施查看每个仓的覆盖范围。",dur:10500,run:async()=>{
+  await scrollTo(CASE,1300);await caseTab(0);const root=caseRoot();await wait(800);const map=await waitFor(()=>mapIn(root),4000);
+  if(map){const js=await px(map,32.9,119.6);await hoverMapTo(js[0],js[1],900);await wait(1300);
+    const sh=await px(map,31.2,121.45);await hoverMapTo(sh[0],sh[1],700);await wait(900);await mapClick(sh[0],sh[1]);await wait(1800)}
+  else{const b=byText(".HomeCoveragePanel__levels button","上海");if(b){await curTo(b);await click(b);await wait(1600)}}
+  const tab=qa(".HomeCoveragePanel__tabs button")[1];if(tab){await curTo(tab,700);await click(tab);await wait(1300)}
+  const ms=await waitFor(()=>markers(root).length&&markers(root));if(ms){await curTo(ms[0],700);hover(ms[0]);await wait(1300);await curTo(ms[Math.min(2,ms.length-1)],600);hover(ms[Math.min(2,ms.length-1)]);await wait(1300);unhover()}}},
+{ch:1,eb:"Case 02",nm:"配送调度",ds:"在运力、时效与服务范围限制下比较路线，选中后其余路线自动弱化。",dur:7200,run:async()=>{
+  await scrollTo(CASE,600);await caseTab(1);const rows=await waitFor(()=>qa(".HomeDispatchRoutes button").length>=3&&qa(".HomeDispatchRoutes button"));
+  await curTo(rows[0],700);hover(rows[0]);await wait(900);await curTo(rows[1],500);hover(rows[1]);await wait(500);await click(rows[1]);unhover();await wait(1700);
+  await curTo(rows[2],600);hover(rows[2]);await wait(400);await click(rows[2]);unhover();await wait(1800)}},
+{ch:1,eb:"Case 03",nm:"司机位置追踪",ds:"已完成路段、剩余路段与司机实时位置连成一条可信的追踪链路。",dur:6000,run:async()=>{
+  await scrollTo(CASE,600);await caseTab(2);const trig=await waitFor(()=>q(".MapRouteOverlay__progressTrigger",caseRoot()));
+  if(trig){await curTo(trig,900);hover(trig);await wait(600);await ripple();trig.dispatchEvent(new (W().MouseEvent)("click",{bubbles:true,detail:0}));await wait(2400);unhover()}}},
+{ch:1,eb:"Case 04",nm:"物流运营监控",ds:"在一张地图中掌握网络健康度、任务进度和区域风险。",dur:6400,run:async()=>{
+  await scrollTo(CASE,600);await caseTab(3);const root=caseRoot();await wait(1000);const map=await waitFor(()=>mapIn(root),4000);
+  if(map){for(const [la,ln] of [[31.27,121.53],[31.17,121.44],[31.39,121.41]]){const p=await px(map,la,ln);await hoverMapTo(p[0],p[1],750);await mapClick(p[0],p[1]);await wait(800)}}
+  await wait(800)}},
+{ch:2,eb:"Get started",nm:"设计与 AI 开发入口",ds:"设计师从 Figma 组件库开始；开发者用 Map Skill 让 AI 直接复用 Map Lab 组件。",dur:7000,run:async()=>{
+  await scrollTo("#get-started",1300);const btn=await waitFor(()=>byText("#get-started button","获取 AI 开发资源")||byText("#get-started button","AI"));
+  if(btn){await curTo(btn,900);hover(btn);await wait(500);await click(btn);unhover();await wait(900);
+    const g=await waitFor(()=>q("#showcase-start-guide"));if(g){const sc=scroller();const y0=sc.scrollTop,y1=y0+g.getBoundingClientRect().top-140;await tween(1100,k=>sc.scrollTop=y0+(y1-y0)*k)}
+    const dl=qa("#showcase-start-guide [role=list] > *");if(dl[1]){await curTo(dl[1],800);hover(dl[1]);await wait(1300);unhover()}}
+  await wait(800)}},
+{ch:-2,cap:"结尾",dur:3400,run:async()=>{$("#outro").classList.add("on");await wait(3000);$("#outro").classList.remove("on");await wait(400)}}
+];
+
+/* ---------- chapters / segments / play ---------- */
+const chs=$("#chs");
+CH.forEach((c,i)=>{const b=document.createElement("button");b.className="ch";b.innerHTML=`<span class="n">${c.n}</span><div><div class="t">${c.t}</div><div class="s">${c.s}</div><div class="detail"></div></div>`;
+  b.onclick=()=>go(STEPS.findIndex(s=>s.ch===i));chs.appendChild(b)});
+const segs=$("#segs");STEPS.forEach((s,i)=>{const b=document.createElement("button");b.className="seg"+(i>0&&STEPS[i-1].ch!==s.ch?" gap":"");b.innerHTML="<i><b></b></i>";b.setAttribute("aria-label",s.nm||s.cap);b.onclick=()=>go(i);segs.appendChild(b)});
+let cur=0;
+function updateUI(){const s=STEPS[cur];
+  chs.querySelectorAll(".ch").forEach((b,i)=>{b.classList.toggle("on",i===s.ch);if(i===s.ch){const d=b.querySelector(".detail");
+    d.innerHTML=`<div class="eb">${s.eb}</div><div class="nm">${s.nm}</div><div class="ds">${s.ds}</div>`;d.style.animation="none";d.offsetWidth;d.style.animation=""}});
+  segs.querySelectorAll(".seg").forEach((b,i)=>{b.classList.toggle("done",i<cur);b.querySelector("b").style.width=i<cur?"100%":"0"});
+  $("#cap").textContent=s.ch>=0?`${CH[s.ch].n} · ${s.nm}`:s.cap}
+(function bar(){const b=segs.children[cur]?.querySelector("b");if(b)b.style.width=Math.min(100,elapsed/STEPS[cur].dur*100)+"%";requestAnimationFrame(bar)})();
+function shell(){if(STEPS[cur].ch>=0){["#left","#brand","#ctl","#win"].forEach(s=>$(s).style.opacity=1);$("#win").style.transform="none";$("#intro").classList.remove("on");$("#outro").classList.remove("on")}}
+async function play(i){token++;const my=token;cur=i;elapsed=0;unhover();camSet(1,0,0);CUR.classList.remove("zooming");updateUI();shell();
+  try{prepFrame();hookMaps();if(STEPS[i].ch>=0)$("#veil").classList.add("off");await STEPS[i].run();await wait(300)}catch(e){if(e===ABORT)return;console.error(e)}
+  if(my===token)play((i+1)%STEPS.length)}
+function go(i){if(paused)setPaused(false);if(STEPS[i].ch>=0&&STEPS[cur].ch<0)jumpTo(STEPS[i].ch===1?CASE:COMP);play(i)}
+const PLAY=`<svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 1.5v11l9-5.5z" fill="#fff"/></svg>`,PAUSE=`<svg width="14" height="14" viewBox="0 0 14 14"><rect x="2.5" y="1.5" width="3" height="11" rx="1" fill="#fff"/><rect x="8.5" y="1.5" width="3" height="11" rx="1" fill="#fff"/></svg>`;
+function setPaused(p){paused=p;$("#pp").innerHTML=p?PLAY:PAUSE;$("#pp").setAttribute("aria-label",p?"播放":"暂停");$("#view").classList.toggle("free",p);CUR.style.opacity=p?0:CUR.style.opacity}
+$("#pp").onclick=()=>setPaused(!paused);setPaused(false);
+addEventListener("keydown",e=>{if(e.code==="Space"){e.preventDefault();setPaused(!paused)}if(e.code==="ArrowRight")go((cur+1)%STEPS.length);if(e.code==="ArrowLeft")go((cur-1+STEPS.length)%STEPS.length)});
+$("#mq1").innerHTML="<span>AI-powered</span>".repeat(6);$("#mq2").innerHTML="<span>design-practice</span>".repeat(6);
+setInterval(()=>{try{hookMaps()}catch(e){}},50);
+function start(){if(started)return;started=true;const s=+(new URLSearchParams(location.search).get("step")||0);if(s>0){jumpTo(STEPS[s].ch===1?CASE:COMP)}play(s)}
+window.__demo={go:i=>go(i),setPaused:p=>setPaused(p),cur:()=>cur,STEPS,h:{wait,tween,waitFor,curTo,hover,unhover,click,ripple,mapClick,hoverMapTo,zoomMap,scrollTo,jumpTo,component,caseTab,markers,compMapRoot,caseRoot,mapIn,px,q,qa,byText,W,D,scroller}};
+function frameOk(){try{return !!(F.contentDocument&&F.contentDocument.querySelector("#root"))}catch(e){return false}}
+function onFrameLoad(){if(!frameOk()){$("#veil").innerHTML=location.protocol==="file:"?"请通过本地开发服务器打开：<br>npm run dev:showcase 后访问 http://127.0.0.1:5175/demo.html":"无法访问 showcase 页面：demo 需要和 showcase 在同一个域名/端口下";$("#veil").style.cssText+="text-align:center;line-height:1.8;font-size:20px";return}prepFrame();const io=new IntersectionObserver(es=>{visible=es[0].isIntersecting;if(visible)start()},{threshold:.25});io.observe($("#fit"))}
+// 线上（/map-explore/）和本地开发服务器（/）下 showcase 的路径不同
+const SHOWCASE=location.hostname.endsWith("github.io")?"/map-explore/showcase/":"/showcase/";
+if(location.protocol==="file:")onFrameLoad();else{F.addEventListener("load",()=>{if(F.contentWindow.location.href!=="about:blank")onFrameLoad()});F.src=SHOWCASE}
+</script>
+</body>
+</html>
